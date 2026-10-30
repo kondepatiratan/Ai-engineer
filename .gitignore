@@ -6,3 +6,5 @@ models/*.pkl
 data/llm_cache.json
 data/whatsapp_outbox.jsonl
 decisions.csv
+data/orders_sample.csv
+reports/backtest_2026-09.csv

@@ -1,0 +1,116 @@
+# =====================================================================
+#  RTO Guard - business settings
+#  -------------------------------------------------------------------
+#  This is the ONLY file you need to edit to change how orders are
+#  handled. No code changes needed. You can also edit these from the
+#  "Rules" page of the app (it saves back into this file).
+#
+#  Percentages are written as whole numbers (35 means 35%).
+#  After saving, the app picks up the change on the next order.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# 1. RISK BANDS
+#    Every COD order gets an "RTO risk" = chance (0-100%) it will be
+#    refused / not delivered. The bands below decide the action.
+#
+#    risk below  confirm_from        -> Ship as-is
+#    risk from   confirm_from        -> Ship after WhatsApp confirmation
+#    risk from   nudge_from          -> Nudge to prepaid (discount offer)
+#    risk from   hold_from           -> Hold / cancel
+#
+#    New customers get their own, more forgiving bands, because we
+#    paid ~Rs 300 to acquire them and cancelling their first order
+#    usually loses them for good (Marketing's concern).
+# ---------------------------------------------------------------------
+risk_bands:
+  repeat_customer:
+    confirm_from: 25
+    nudge_from: 40
+    hold_from: 75
+  new_customer:
+    confirm_from: 25
+    nudge_from: 40
+    hold_from: 85   # very high bar: we almost never cancel a first order
+
+# ---------------------------------------------------------------------
+# 2. HARD RULES  (checked before the risk bands; first match wins)
+#    Set enabled: false to switch a rule off.
+# ---------------------------------------------------------------------
+hard_rules:
+  # Fake-looking name AND unusable address (e.g. "asdf", ".").
+  # 73% of these were returned in our data.
+  fake_name_and_junk_address:
+    enabled: true
+    action: hold
+  # Customer has refused 2+ COD orders before (77% returned again).
+  # We don't cancel - we ask them to pay online instead.
+  two_or_more_past_rtos:
+    enabled: true
+    action: nudge_prepaid
+  # Phone number is not a valid 10-digit Indian mobile.
+  # OFF by default: in the September backtest this rule held 2 orders and
+  # both were genuine. The risk score already counts a bad phone; the
+  # WhatsApp step falls back to email for these customers.
+  invalid_phone:
+    enabled: false
+    action: hold
+  # Address is too thin to deliver ("home", "near station", ".").
+  # 62% returned. Ask the customer for a full address on WhatsApp.
+  junk_address:
+    enabled: true
+    action: confirm
+
+# ---------------------------------------------------------------------
+# 3. MONEY ASSUMPTIONS (used for every Rs figure on the dashboard)
+# ---------------------------------------------------------------------
+money:
+  forward_shipping: 65
+  return_shipping: 65
+  packaging_handling: 25
+  damaged_return_rate: 8        # % of returned products we can't resell
+  avg_product_cost: 180
+  gross_margin: 62              # % of order value kept on a delivered order
+  new_customer_future_value: 300  # Rs of future value lost if we cancel a
+                                  # genuine first-time buyer (we use the Rs 300
+                                  # acquisition cost as a conservative proxy)
+
+# ---------------------------------------------------------------------
+# 4. WHATSAPP CONFIRMATION
+# ---------------------------------------------------------------------
+whatsapp:
+  message_cost: 0.15            # Rs per WhatsApp utility message
+  reminder_after_hours: 12      # send one reminder if no reply
+  give_up_after_hours: 24       # then follow the no-reply rule below
+  quiet_hours_start: 21         # don't message between 9 pm ...
+  quiet_hours_end: 8            # ... and 8 am (queue for 8 am)
+  # What to do if the customer never replies within give_up_after_hours:
+  #   ship_if_risk_below: still ship if risk is lower than this %
+  #   otherwise: cancel and send a "reply anytime to re-place" message
+  no_reply_ship_if_risk_below: 35
+  # Planning assumptions (replace with real numbers after 2 weeks live):
+  rto_caught_share: 40          # % of would-be RTOs that say No / never reply
+  genuine_dropoff: 3            # % of genuine buyers lost due to the extra step
+
+# ---------------------------------------------------------------------
+# 5. PREPAID NUDGE
+# ---------------------------------------------------------------------
+prepaid_nudge:
+  discount_rs: 40               # flat discount for paying online
+  max_discount_pct: 8           # never more than this % of order value
+  offer_valid_hours: 6
+  prepaid_rto_rate: 4           # % RTO on prepaid orders
+  payment_gateway_fee: 2        # % of order value
+  take_up_rate: 20              # % of customers expected to switch to prepaid
+
+# ---------------------------------------------------------------------
+# 6. LANGUAGE FOR WHATSAPP MESSAGES (by delivery state)
+#    Options: english, hinglish, hindi
+# ---------------------------------------------------------------------
+language_by_state:
+  default: english
+  Bihar: hinglish
+  Uttar Pradesh: hinglish
+  Madhya Pradesh: hinglish
+  Rajasthan: hinglish
+  Delhi: hinglish
