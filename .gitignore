@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+models/*.pkl
+data/llm_cache.json
+data/whatsapp_outbox.jsonl
+decisions.csv
